@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Socket Client Example</title>
+    <!-- Загрузка необходимых скриптов -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stomp-websocket/lib/stomp.min.js"></script>
+</head>
+<body>
+<h1>Socket Client Example</h1>
+<div id="messages"></div>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", () => {
+    // Адрес сокета
+    const socketUrl = 'http://localhost:8183/result-interpreter';
+
+    // Токен пользователя
+    const jwtToken = 'Bearer ';
+
+    /// Guid Ream
+    const realmGuid = '';
+
+    // Элемент страницы для вывода сообщений
+    const messagesDiv = document.querySelector('#messages');
+
+    // Подключаемся к серверу через SockJS
+    let sockjs = new SockJS(socketUrl, null, {
+          transportOptions: {
+            headers: {
+              Authorization: jwtToken
+            }
+          }
+     });
+
+    // Устанавливаем соединение через STOMP
+    let stompClient = Stomp.over(sockjs);
+
+    // Функция добавления сообщений на страницу
+    function addMessage(text) {
+        const messageElement = document.createElement('div');
+        messageElement.textContent = text;
+        messagesDiv.appendChild(messageElement);
+    }
+
+    // Подключаемся к серверу ws:
+    stompClient.connect({Authorization: jwtToken, Realm_guid: realmGuid},  function(frame) {
+        addMessage(`Подключён к серверу (${frame})`);
+
+        // Подписываемся на канал '/user/logs_data'
+        stompClient.subscribe('/user/logs_data', function(message) {
+            try {
+                const data = JSON.parse(message.body);
+                addMessage(`Получено сообщение: ${JSON.stringify(data)}`);
+            } catch(e) {
+                addMessage(`Ошибка парсинга сообщения: ${message.body}`);
+            }
+        });
+    });
+
+    // Обрабатываем ошибку подключения
+    sockjs.onclose = function() {
+        addMessage('Отключились от сервера.');
+    };
+});
+</script>
+</body>
+</html>
