@@ -8,7 +8,7 @@
 
 ```node server.js ```
 
-## Отпрыть в браузере 
+## Открыть в браузере 
 
 http://localhost:3000/test.html
 
