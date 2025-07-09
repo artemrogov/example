@@ -16,10 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const socketUrl = 'http://localhost:8183/result-interpreter';
 
     // Токен пользователя
-    const jwtToken = 'Bearer ';
+    const jwtToken = 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc19tYXN0ZXIiOmZhbHNlLCJ1c2VyX2lkIjoiMTQ2ODU1NmYtYTExYy00OTc0LTljNGQtMzE2MzFhNzBiMzQ5Iiwicm9sZXMiOnsiYWY4ZTQzZDQtMjI5ZC00MGI2LTk5ZjAtMGQzNDNkY2E5MzliIjpbIlJPTEVfQVBQTElDQVRJT05fREVTSUdORVIiLCJST0xFX1JFUE9SVF9ERVZFTE9QRVIiLCJST0xFX0RBVEFfRU5HSU5FRVIiXX0sInN1YiI6InJvZ2FyIiwiaWF0IjoxNzUyMDgxODkxLCJleHAiOjE3NTIwOTI2OTEsImp0aSI6ImJjYjk0OWIyLTJhNjctNDE1OS1iOTkyLTk2M2I2MDkxNTA5ZSJ9.IubLCESf6GS-7e8llVTB7xxTS-GWJfa8hHhJJjGmMcJlxmbs147_TMBFcvK1Lx28eHP1U4RMENAITpKi7mqbpg';
 
     /// Guid Ream
-    const realmGuid = '';
+    const realmGuid = 'af8e43d4-229d-40b6-99f0-0d343dca939b';
 
     // Элемент страницы для вывода сообщений
     const messagesDiv = document.querySelector('#messages');
@@ -49,12 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Подписываемся на канал '/user/logs_data'
         stompClient.subscribe('/user/logs_data', function(message) {
-            try {
-                const data = JSON.parse(message.body);
-                addMessage(`Получено сообщение: ${JSON.stringify(data)}`);
-            } catch(e) {
-                addMessage(`Ошибка парсинга сообщения: ${message.body}`);
-            }
+            //const data = JSON.parse(message.body);
+            addMessage(message.body);
         });
     });
 
