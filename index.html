@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SSO Login Page</title>
+    <!-- Подключение jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+<h1>SSO Test Application</h1>
+
+<!-- Кнопка для входа через SSO -->
+<button id="ssoLoginButton">Войти через SSO</button>
+
+<div style="margin-top: 20px; font-size: large;" id="messageArea"></div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+    // Нажатие на кнопку вызывает переход на страницу SSO
+    $("#ssoLoginButton").click(function() {
+        window.location.href = 'http://localhost:8080/oauth2/authorization/keycloak'; // Адрес вашей точки входа SSO
+    });
+    
+});
+</script>
+
+</body>
+</html>
