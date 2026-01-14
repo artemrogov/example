@@ -15,9 +15,13 @@
     <ul id="userDataList"></ul>
 </div>
 
+<div id="userSpecData">
+<!-- Здесь будут выведены сырые JSON-данные -->
+</div>    
+
 <!-- Кнопка Logout -->
 <!-- Форма для логаута -->
-<form class="form-signin" method="post" action="http://localhost:8080/logout">
+<form class="form-signin" method="post" action="http://localhost:8181/logout">
     <input name="_csrf" type="hidden" id="csrfInput">
     <button class="btn btn-lg btn-primary btn-block" type="submit">Log Out</button>
 </form>
@@ -26,21 +30,21 @@
 
 $(document).ready(function() {
 
-function getCookie(name) {
-    var value = "; " + document.cookie;
-    var parts = value.split("; " + name + "=");
-    if (parts.length == 2) return parts.pop().split(";").shift();
-}
+    function getCookie(name) {
+        var value = "; " + document.cookie;
+        var parts = value.split("; " + name + "=");
+        if (parts.length == 2) return parts.pop().split(";").shift();
+    }
 
-// Установим значение _csrf из cookie
-var csrfToken = getCookie('XSRF-TOKEN');
-if(csrfToken){
-    document.getElementById('csrfInput').value = csrfToken;
-}
+    // Установим значение _csrf из cookie
+    var csrfToken = getCookie('XSRF-TOKEN');
+    if(csrfToken){
+        document.getElementById('csrfInput').value = csrfToken;
+    }
 
     // Получение текущего пользователя
     $.ajax({
-        url: 'http://localhost:8080/api/session/auth-oidc-current-user',
+        url: 'http://localhost:8181/api/session/auth-oidc-current-user',
         method: 'GET',
         xhrFields: {
             withCredentials: true // Включаем передачу cookies и auth-заголовков
@@ -48,7 +52,7 @@ if(csrfToken){
         success: function(data) {
             // Очищаем список перед заполнением новыми данными
             $('#userDataList').empty();
-            
+        
             // Перебираем свойства объекта и формируем элементы списка
             for(let key in data) {
                 $('#userDataList').append('<li>' + key + ': ' + data[key] + '</li>');
@@ -56,6 +60,26 @@ if(csrfToken){
         },
         error: function(jqXHR, textStatus, errorThrown) {
             alert('Ошибка загрузки данных: ' + errorThrown);
+        }
+    });
+
+    // Отправляем POST-запрос для получения токена и отображаем raw JSON
+    $.ajax({
+        url: 'http://localhost:8181/api/session/get-token', // адрес для получения токена
+        method: 'POST',
+        headers: {                   // Убедимся, что добавляем заголовок с CSRF
+            'X-XSRF-TOKEN': csrfToken,
+            'Content-Type': 'application/json'
+        },
+        xhrFields: {
+            withCredentials: true   // Важно передать куки вместе с запросом
+        },
+        success: function(response) {
+            // Выведем полученные данные прямо в #userSpecData
+            $("#userSpecData").text(JSON.stringify(response, null, 2)); // Красивое форматирование JSON
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            alert('Ошибка при получении токена: ' + errorThrown);
         }
     });
 });
