@@ -17,7 +17,12 @@
 
 <div id="userSpecData">
 <!-- Здесь будут выведены сырые JSON-данные -->
-</div>    
+</div>
+
+
+<p>Уникальный логин пользователя:
+<p id="idP-login" style="font-weight: bolder;"></p>    
+</hr>
 
 <!-- Кнопка Logout -->
 <!-- Форма для логаута -->
@@ -80,6 +85,22 @@ $(document).ready(function() {
         },
         error: function(jqXHR, textStatus, errorThrown) {
             alert('Ошибка при получении токена: ' + errorThrown);
+        }
+    });
+
+     // Новый запрос для получения имени пользователя
+    $.ajax({
+        url: 'http://localhost:8181/api/session/get-login-idp-test',
+        method: 'GET',
+        xhrFields: {
+            withCredentials: true // Включаем передачу cookies и auth-заголовков
+        },
+        success: function(data) {
+            // Выводим имя пользователя в контейнер с id="idP-login"
+            $('#idP-login').text(data);
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            alert('Ошибка при получении имени пользователя: ' + errorThrown);
         }
     });
 });
