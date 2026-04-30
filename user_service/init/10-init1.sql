@@ -1,0 +1,19 @@
+ALTER SYSTEM SET max_connections = 500;
+
+CREATE ROLE service_user WITH
+    LOGIN
+    SUPERUSER
+    CREATEDB
+    CREATEROLE
+    INHERIT
+    REPLICATION
+    CONNECTION LIMIT -1
+    PASSWORD 'wEKcsQn7ndewLmZdGYUo';
+
+CREATE DATABASE service_user
+    WITH
+    OWNER = postgres
+    ENCODING = 'UTF8'
+    CONNECTION LIMIT = -1;
+
+GRANT ALL ON DATABASE service_user TO service_user WITH GRANT OPTION;

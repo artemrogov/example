@@ -11,22 +11,18 @@
 <h1>SSO Test SPA application</h1>
 
 <!-- Блок для вывода данных пользователя -->
-<div id="userInfoBlock">
-    <ul id="userDataList"></ul>
-</div>
-
 <div id="userSpecData">
-<!-- Здесь будут выведены сырые JSON-данные -->
+    <ul id="userSpecData"></ul>
 </div>
 
 
-<p>Уникальный логин пользователя:
-<p id="idP-login" style="font-weight: bolder;"></p>    
-</hr>
+<p id="userAuthLocalName">
+  
+</p>
 
 <!-- Кнопка Logout -->
 <!-- Форма для логаута -->
-<form class="form-signin" method="post" action="http://localhost:8181/logout">
+<form class="form-signin" method="post" action="http://localhost:8080/logout">
     <input name="_csrf" type="hidden" id="csrfInput">
     <button class="btn btn-lg btn-primary btn-block" type="submit">Log Out</button>
 </form>
@@ -46,31 +42,29 @@ $(document).ready(function() {
     if(csrfToken){
         document.getElementById('csrfInput').value = csrfToken;
     }
-
-    // Получение текущего пользователя
+    
     $.ajax({
-        url: 'http://localhost:8181/api/session/auth-oidc-current-user',
-        method: 'GET',
-        xhrFields: {
-            withCredentials: true // Включаем передачу cookies и auth-заголовков
+        url: 'http://localhost:8080/api/sessions/get-token', // адрес для получения токена
+        method: 'POST',
+        headers: {                   // Убедимся, что добавляем заголовок с CSRF
+            'X-XSRF-TOKEN': csrfToken,
+            'Content-Type': 'application/json'
         },
-        success: function(data) {
-            // Очищаем список перед заполнением новыми данными
-            $('#userDataList').empty();
-        
-            // Перебираем свойства объекта и формируем элементы списка
-            for(let key in data) {
-                $('#userDataList').append('<li>' + key + ': ' + data[key] + '</li>');
-            }
+        xhrFields: {
+            withCredentials: true   // Важно передать куки вместе с запросом /gateway/service-oauth2-client
+        },
+        success: function(response) {
+            // Выведем полученные данные прямо в #userSpecData
+            $("#userSpecData").text(JSON.stringify(response, null, 2)); // Красивое форматирование JSON
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            alert('Ошибка загрузки данных: ' + errorThrown);
+            alert('Ошибка при получении токена: ' + errorThrown);
         }
+
     });
 
-    // Отправляем POST-запрос для получения токена и отображаем raw JSON
-    $.ajax({
-        url: 'http://localhost:8181/api/session/get-token', // адрес для получения токена
+     $.ajax({
+        url: 'http://localhost:8080/api/sessions/get-auth-user', // адрес для получения токена
         method: 'POST',
         headers: {                   // Убедимся, что добавляем заголовок с CSRF
             'X-XSRF-TOKEN': csrfToken,
@@ -81,28 +75,13 @@ $(document).ready(function() {
         },
         success: function(response) {
             // Выведем полученные данные прямо в #userSpecData
-            $("#userSpecData").text(JSON.stringify(response, null, 2)); // Красивое форматирование JSON
+            $("#userAuthLocalName").text(JSON.stringify(response, null, 2)); // Красивое форматирование JSON
         },
         error: function(jqXHR, textStatus, errorThrown) {
             alert('Ошибка при получении токена: ' + errorThrown);
         }
     });
 
-     // Новый запрос для получения имени пользователя
-    $.ajax({
-        url: 'http://localhost:8181/api/session/get-login-idp-test',
-        method: 'GET',
-        xhrFields: {
-            withCredentials: true // Включаем передачу cookies и auth-заголовков
-        },
-        success: function(data) {
-            // Выводим имя пользователя в контейнер с id="idP-login"
-            $('#idP-login').text(data);
-        },
-        error: function(jqXHR, textStatus, errorThrown) {
-            alert('Ошибка при получении имени пользователя: ' + errorThrown);
-        }
-    });
 });
 </script>
 

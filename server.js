@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = 3000;
+const port = 10000;
 
 // Сервер отдаёт файлы из директории static
 app.use(express.static(__dirname));
