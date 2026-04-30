@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   service-oauth2-keycloak:
     image: quay.io/keycloak/keycloak:${KEYCLOAK_IMAGE_TAG:-26.4.0}
@@ -16,7 +14,7 @@ services:
       KC_HTTP_PORT: "8181"
       KC_HTTP_ENABLED: "true"
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000; echo -e 'GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n' >&3; if [ $? -eq 0 ]; then echo 'Healthcheck Successful'; exit 0; else echo 'Healthcheck Failed'; exit 1; fi"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8181; echo -e 'GET /health/ready HTTP/1.1\\r\\nhost: http://localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; if [ $? -eq 0 ]; then echo 'Healthcheck Successful'; exit 0; else echo 'Healthcheck Failed'; exit 1; fi"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -24,6 +22,8 @@ services:
       - "${TEST_KEYCLOAK_PORT_MAPPING:-8484}:8181"
     volumes:
       - ./service_oauth/keycloak/test_realm.json:/opt/keycloak/data/import/test_realm.json:ro
+    networks:
+      - all_local_dev_omega_bi_kafka
 
   service-oauth2-redis:
     image: redis:${REDIS_IMAGE_TAG:-7.2.2}
@@ -42,6 +42,8 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+    networks:
+      - all_local_dev_omega_bi_kafka
 
   service-user-postgres:
     image: library/postgres:${POSTGRES_IMAGE_TAG:-15.3}
@@ -68,6 +70,8 @@ services:
         source: ./user_service/init/
         target: /docker-entrypoint-initdb.d/
         read_only: true
+    networks:
+      - all_local_dev_omega_bi_kafka
 
   service-auth-postgres:
     image: library/postgres:${POSTGRES_IMAGE_TAG:-15.3}
@@ -94,79 +98,66 @@ services:
         source: ./service_auth/init/
         target: /docker-entrypoint-initdb.d/
         read_only: true
+    networks:
+      - all_local_dev_omega_bi_kafka
 
   kafka-broker:
-    image: confluentinc/cp-kafka:${KAFKA_IMAGE_TAG:-5.5.2}
+    image: confluentinc/cp-kafka:5.5.2
     container_name: kafka-broker
     hostname: kafka-broker
-    restart: unless-stopped
     expose:
       - "9092"
     ports:
-       - "9092:9092"
-       - "9094:9094"
+      - "9092:9092"
+      - "9094:9094"
     environment:
-       LANG: en_US.utf8
-       LC_ALL: en_US.utf8
-       JDK_JAVA_OPTIONS: "-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8"
-       KAFKA_LISTENERS: "INTERNAL://0.0.0.0:9092,OUTSIDE://0.0.0.0:9094"
-       KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka-broker:${KAFKA_PORT_9092_TCP:-9092},OUTSIDE://${KAFKA_ADVERTISED_HOSTNAME:-localhost}:${KAFKA_PORT_9094_TCP:-9094}"
-       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT"
-       KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
-       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:${ZOOKEEPER_PORT_2181_TCP:-2181}"
-       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
-       KAFKA_LOG4J_ROOT_LOGLEVEL: "ERROR"
-       KAFKA_LOG4J_LOGGERS:
-         org.apache.zookeeper=ERROR,
-         org.apache.kafka=ERROR,
-         kafka=ERROR,
-         kafka.cluster=ERROR,
-         kafka.controller=ERROR,
-         kafka.coordinator=ERROR,
-         kafka.log=ERROR,
-         kafka.server=ERROR,
-         kafka.zookeeper=ERROR,
-         state.change.logger=ERROR
-       KAFKA_LOG_RETENTION_MS: "86400000"
-       KAFKA_LOG_RETENTION_HOURS: "24"
-       KAFKA_LOG_RETENTION_BYTES: "1073741824"
-       KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: "20000"
-       KAFKA_LOG_SEGMENT_BYTES: "107374182"
-       KAFKA_LOG_SEGMENT_DELETE_DELAY_MS: "1000"
-     depends_on:
-       - zookeeper
-     networks:
-       - all_local_dev_omega_bi_kafka
+      LANG: en_US.utf8
+      LC_ALL: en_US.utf8
+      JDK_JAVA_OPTIONS: -Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,OUTSIDE://0.0.0.0:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-broker:9092,OUTSIDE://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_HOST_NAME: kafka-broker
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG4J_ROOT_LOGLEVEL: ERROR
+      KAFKA_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.apache.kafka=ERROR,kafka=ERROR,kafka.cluster=ERROR,kafka.controller=ERROR,kafka.coordinator=ERROR,kafka.log=ERROR,kafka.server=ERROR,kafka.zookeeper=ERROR,state.change.logger=ERROR
+      KAFKA_LOG_RETENTION_MS: 86400000
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 20000
+      KAFKA_LOG_SEGMENT_BYTES: 107374182
+      KAFKA_LOG_SEGMENT_DELETE_DELAY_MS: 1000
+    depends_on:
+      - zookeeper
+    networks:
+      - all_local_dev_omega_bi_kafka
 
   kafka-ui:
-    image: provectuslabs/kafka-ui:${KAFKA_UI_IMAGE_TAG:-latest}
     container_name: kafka-ui
-    restart: unless-stopped
+    image: provectuslabs/kafka-ui:latest
     ports:
-     - "9093:${KAFKA_UI_PORT:-8080}"
-     # Добавил healthcheck для надежности (опционально)
-     # healthcheck:
-     #   test: ["CMD", "curl", "-f", "http://localhost/health"]
-     #   interval: 30s
-     #   timeout: 10s
-     #   retries: 3
+      - 9093:8080
     environment:
-     DYNAMIC_CONFIG_ENABLED: "true"
-     KAFKA_CLUSTERS_0_NAME: esb
-     KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS:
-       - kafka-broker:${KAFKA_PORT_9092_TCP:-9092}
-     # Добавил переменную для пароля, если потребуется (опционально)
-     # KAFKA_SASL_MECHANISMS_0_PLAINTEXT_USERNAME_0=admin
+      DYNAMIC_CONFIG_ENABLED: true
+      KAFKA_CLUSTERS_0_NAME: esb
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker:9092
+    networks:
+      - all_local_dev_omega_bi_kafka
 
   zookeeper:
-    image: zookeeper:${ZOOKEEPER_IMAGE_TAG:-3.5.10}
+    image: zookeeper:3.5.10
     container_name: zookeeper
     hostname: zookeeper
-    restart: unless-stopped
     expose:
-     - "2181"
-    ports:
-     - "${ZOOKEEPER_PORT_MAPPING:-22181}:2181" # Поменял порт, чтобы избежать конфликта с хостом, если он занят на 2181
+      - "2181"
     environment:
-     ZOOKEEPER_CLIENT_PORT: "${ZOOKEEPER_CLIENT_PORT:-2181}"
-     ZOO_MY_ID: "${ZOO_MY_ID:-1}"
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOO_MY_ID: 1
+    networks:
+      - all_local_dev_omega_bi_kafka
+
+networks:
+  all_local_dev_omega_bi_kafka:
+    driver: bridge
